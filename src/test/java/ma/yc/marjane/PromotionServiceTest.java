@@ -1,67 +1,68 @@
 package ma.yc.marjane;
-import ma.yc.marjane.DTO.ProductDTO;
-import ma.yc.marjane.DTO.PromotionDTO;
+
+import ma.yc.marjane.DTO.CategoryDTO;
 import ma.yc.marjane.Models.ProductModel;
 import ma.yc.marjane.Models.PromotionModel;
-import ma.yc.marjane.Mappers.ProductMapper;
-import ma.yc.marjane.Repositories.PromotionRepository;
-import ma.yc.marjane.Services.ProductService;
+import ma.yc.marjane.Services.CategoryService;
 import ma.yc.marjane.Services.PromotionService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
 public class PromotionServiceTest {
-    @Mock
-    private ProductService productService;
 
     @Mock
-    private PromotionRepository promotionRepository;
+    private CategoryService categoryService;
 
     @InjectMocks
     private PromotionService promotionService;
 
     @Test
-    public void testAcceptPromotion() {
+    public void testReadByCategory() {
         // Arrange
-        int promotionId = 1;
+        int categoryId = 1;
 
-        // Mocking the PromotionModel and ProductDTO
+        // Mocking CategoryDTO and ProductModel
+        CategoryDTO categoryDTO = new CategoryDTO();
+        categoryDTO.setId(categoryId);
+        categoryDTO.setName("Electronics");
+
+        List<ProductModel> productModelList = new ArrayList<>();
+        ProductModel productModel = new ProductModel();
+        productModel.setId(1);
+        productModelList.add(productModel);
+
+        List<PromotionModel> promotionModelList = new ArrayList<>();
         PromotionModel promotionModel = new PromotionModel();
-        promotionModel.setId(promotionId);
-        promotionModel.setPromotionPercentage(10.0F);
+        promotionModel.setProduct(productModel);
+        promotionModelList.add(promotionModel);
 
-        ProductDTO productDTO = new ProductDTO();
-        productDTO.setId(2);
-        productDTO.setPrice(100.0);
+        // Mocking CategoryService read method
+        when(categoryService.read(categoryId)).thenReturn(categoryDTO);
 
-        // Mocking the ProductService methods
-        Mockito.when(promotionRepository.findById(promotionId)).thenReturn(Optional.of(promotionModel));
-        Mockito.when(productService.read(productDTO.getId())).thenReturn(productDTO);
-
-        // Mocking the ProductService update method
-        Mockito.when(productService.update(Mockito.any())).thenReturn(new ProductDTO());
+        // Mocking PromotionService readAll method
+        when(promotionService.readAll()).thenReturn(promotionModelList);
 
         // Act
-        ProductDTO updatedProduct = promotionService.acceptPromotion(promotionId);
+        List<PromotionModel> matchingPromotions = promotionService.readByCategory(categoryId);
 
         // Assert
-        // Verify that the ProductService methods were called
-        Mockito.verify(productService, Mockito.times(1)).read(productDTO.getId());
-        Mockito.verify(productService, Mockito.times(1)).update(Mockito.any());
+        assertNotNull(matchingPromotions);
+        assertEquals(1, matchingPromotions.size());
+        assertEquals(promotionModel, matchingPromotions.get(0));
 
-        // Add assertions based on the expected behavior of the acceptPromotion method
-        assertEquals(90.0, updatedProduct.getPrice(), 0.01);
+        // Verify that setPromotion and setCategory methods were called on the matching promotion's product
+        Mockito.verify(promotionModel.getProduct(), Mockito.times(1)).setPromotion(null);
+        Mockito.verify(promotionModel.getProduct(), Mockito.times(1)).setCategory(null);
     }
-
 }
